@@ -83,6 +83,11 @@ function processMouseMove(e){
       gaCtx.moveTo(shipLoc.x, shipLoc.y);
       gaCtx.lineTo(m.x, m.y);
       gaCtx.stroke();
+      gaCtx.beginPath();
+      gaCtx.strokeStyle= "white";
+      gaCtx.moveTo(shipLoc.x, shipLoc.y);
+      gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+      gaCtx.stroke();
       //console.log("trying to draw a new path");
       break;
     case "Unselected":
@@ -117,7 +122,12 @@ function processMouseClick(e){
         cycleCode= "Unselected";
         selShipIndex= -1;
         shipList[tempShip].toggleSelect();
-      }else{//runs if no ship is near
+      }else if(tempShip== -1){//run this case if no ship is clicked. This implements a move order
+        shipList[selShipIndex].changeMove(m);
+        cycleCode= "Unselected";
+        shipList[selShipIndex].toggleSelect();
+        selShipIndex= -1;
+      }else{//runs if a different ship is clicked. Implements an attack order
 
       }
     case "NoPlayerControl":
@@ -178,7 +188,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     // gaCtx.stroke();
 
     gaCtx.fillStyle= "white";
-    gaCtx.fillRect(this.pos.x, this.pos.y, 10, 10);//draws the box representing the hull. PLACEHOLDER
+    gaCtx.fillRect(this.pos.x, this.pos.y, 10, 10);//draws the box representing the hull. PLACEHOLDER. Maybe I should make it a circle instead?
     gaCtx.stroke();
 
     // if(this.isMouesddOver){//INCOMPLETE
@@ -192,7 +202,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
     if(this.isSelected){//creates a box to indicate selection
       gaCtx.beginPath();
-      gaCtx.strokeStyle= "red";
+      gaCtx.strokeStyle= "green";
       // gaCtx.lineWidth= "1";
       gaCtx.rect(this.pos.x, this.pos.y, 10, 10);//draws a selector around the ship. PLACEHOLDER
       gaCtx.stroke();
@@ -211,12 +221,16 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   }
 
   this.thrust= function(){//implements the ship's thrust order
-    if(typeof this.moveOrder !== 'undefined')return;
-    if(this.moveOrder.target instanceof vector){
-      this.momentum.add(this.moveOrder);
+    // if(typeof this.moveOrder !== 'undefined')return;
+    // if(this.moveOrder.target instanceof vector){
+    //   this.momentum.add(this.moveOrder);
+    // }
+  }
+
+  this.changeMove= function(newMove){
+    if(newMove instanceof vector){
+      this.momentum.add(newMove);
     }
-
-
   }
 
   this.move= function(){//moves the ship in accordance with its momentum
@@ -280,7 +294,7 @@ function vector(tempX, tempY){//This specifies a vector
 
   this.subtract= function(altVect){//subs the vectors and updates this one with the results.
     if(!(altVect instanceof vector))return;
-    this.x -= altVect.y;
+    this.x -= altVect.x;
     this.y -= altVect.y;
   }
 
@@ -296,14 +310,14 @@ function vector(tempX, tempY){//This specifies a vector
 function addVects(v1, v2){//returns the sum of two vectors in a new vector
   if(!((v1 instanceof vector) || (v2 instanceof vector)))return;
   newX= v1.x+v2.x;
-  newY= v2.y+v2.y;
+  newY= v1.y+v2.y;
   return new vector(newX, newY);
 }
 
 function subVects(v1, v2){//returns the difference of two vectors in a new vector
   if(!((v1 instanceof vector) || (v2 instanceof vector)))return;
   newX= v1.x-v2.x;
-  newY= v2.y-v2.y;
+  newY= v1.y-v2.y;
   return new vector(newX, newY);
 }
 
@@ -322,7 +336,8 @@ function iteratePlayer(){
 function testingMethod(){
   var v1= new vector(300, 300);
   var v2= new vector(100, 75);
-  console.log(subVects(v1, v2));
+  //v1.add(v2);
+  console.log(addVects(v1, v2));
 }
 
 function exercises(){
