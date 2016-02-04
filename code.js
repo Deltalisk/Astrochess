@@ -123,7 +123,7 @@ function processMouseClick(e){
         selShipIndex= -1;
         shipList[tempShip].toggleSelect();
       }else if(tempShip== -1){//run this case if no ship is clicked. This implements a move order
-        shipList[selShipIndex].changeMove(m);
+        shipList[selShipIndex].changeMove(subVects(m, shipList[selShipIndex].pos));
         cycleCode= "Unselected";
         shipList[selShipIndex].toggleSelect();
         selShipIndex= -1;
