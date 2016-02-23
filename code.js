@@ -77,18 +77,21 @@ function processMouseMove(e){
   switch (cycleCode) {
     case "Selected":
       var shipLoc= shipList[selShipIndex].pos;
+
+      console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
+      if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;//This needs to be prettyfied with the resize function.
+
       drawBoard();
       gaCtx.beginPath();
       gaCtx.strokeStyle= "green";
       gaCtx.moveTo(shipLoc.x, shipLoc.y);
       gaCtx.lineTo(m.x, m.y);
-      gaCtx.stroke();
+      gaCtx.stroke();//draws the new thrust vector
       gaCtx.beginPath();
       gaCtx.strokeStyle= "white";
       gaCtx.moveTo(shipLoc.x, shipLoc.y);
       gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
-      gaCtx.stroke();
-      //console.log("trying to draw a new path");
+      gaCtx.stroke();//draws the total thrust vector
       break;
     case "Unselected":
 
@@ -123,6 +126,7 @@ function processMouseClick(e){
         selShipIndex= -1;
         shipList[tempShip].toggleSelect();
       }else if(tempShip== -1){//run this case if no ship is clicked. This implements a move order
+        if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;
         shipList[selShipIndex].changeMove(subVects(m, shipList[selShipIndex].pos));
         cycleCode= "Unselected";
         shipList[selShipIndex].toggleSelect();
@@ -130,6 +134,7 @@ function processMouseClick(e){
       }else{//runs if a different ship is clicked. Implements an attack order
 
       }
+      break;
     case "NoPlayerControl":
     default:
   }
@@ -173,6 +178,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.pos= tempPos;
   this.momentum= tempMoment;
   this.hull= tempHull;
+    this.maxThrust= 100-10*this.hull;//eventually this should get a lookup. balance TBD.
   this.weapon= tempWep;
   this.moveOrder= null;
   this.wepOrder= null;
@@ -185,31 +191,27 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     gaCtx.moveTo(this.pos.x, this.pos.y);
     gaCtx.lineTo(this.pos.x+this.momentum.x, this.pos.y+this.momentum.y);
     //gaCtx.closePath();
-    // gaCtx.stroke();
-
-    gaCtx.fillStyle= "white";
-    gaCtx.fillRect(this.pos.x, this.pos.y, 10, 10);//draws the box representing the hull. PLACEHOLDER. Maybe I should make it a circle instead?
     gaCtx.stroke();
 
-    // if(this.isMouesddOver){//INCOMPLETE
-    //
-    //   // gaCtx.stroke();
-    // }
-
-    this.showMouseover= function(){
-      console.log("I should draw my mouseover!");
-    }
+    gaCtx.fillStyle= "white";
+    gaCtx.beginPath();
+    gaCtx.arc(this.pos.x, this.pos.y, 10, 0, 2*Math.PI);
+    gaCtx.fill();
 
     if(this.isSelected){//creates a box to indicate selection
-      gaCtx.beginPath();
       gaCtx.strokeStyle= "green";
-      // gaCtx.lineWidth= "1";
-      gaCtx.rect(this.pos.x, this.pos.y, 10, 10);//draws a selector around the ship. PLACEHOLDER
+      gaCtx.beginPath();
+      gaCtx.arc(this.pos.x, this.pos.y, 10, 0, 2*Math.PI);
       gaCtx.stroke();
     }
 
     gaCtx.stroke();
 
+  }
+
+
+  this.showMouseover= function(){
+    console.log("I should draw my mouseover!");
   }
 
   this.drawTootlip= function(){//draws a tooltip just below the vessel indicating its status
@@ -227,7 +229,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     // }
   }
 
-  this.changeMove= function(newMove){
+  this.changeMove= function(newMove){//this should eventually implement sanity-checking
     if(newMove instanceof vector){
       this.momentum.add(newMove);
     }
@@ -269,7 +271,7 @@ function isNearShip(loc, distance, shipIndex){//This still needs to be able to f
   }else{//UNFINISHED: this should check for the nearest vessel within d
     for(var i= 0; i<shipList.length; i++){
       var distVect= subVects(shipList[i].pos, loc);
-      if(distVect.magnitude()<d){
+      if(distVect.magnitude()<d || -distVect.magnitude()>d){//there's a bug here in the selection system. I need to fix it.
         return i;
       }
     }
@@ -304,6 +306,13 @@ function vector(tempX, tempY){//This specifies a vector
 
   this.magnitude= function(){//returns the hypotenuse of the vector
     return Math.sqrt(this.x*this.x + this.y*this.y);
+  }
+
+  this.resize= function(newMag){//modifies the vector to have the new magnitude. Normalizable via passing 1.
+    this.x= this.x/this.magnitude();
+    this.x= this.x*newMag;
+    this.y= this.y/this.magnitude();
+    this.y= this.y*newMag;
   }
 }
 
