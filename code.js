@@ -75,13 +75,14 @@ function processMouseMove(e){
   }
 
   switch (cycleCode) {
-    case "Selected":
+    case "Selected"://runs if a ship is selected
       var shipLoc= shipList[selShipIndex].pos;
 
-      console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
+      //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
       if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;//This needs to be prettyfied with the resize function.
 
       drawBoard();
+      shipList[selShipIndex].showMouseover();
       gaCtx.beginPath();
       gaCtx.strokeStyle= "green";
       gaCtx.moveTo(shipLoc.x, shipLoc.y);
@@ -212,6 +213,13 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
   this.showMouseover= function(){
     console.log("I should draw my mouseover!");
+    gaCtx.textAlign= "center";
+    gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
+    gaCtx.font= "20px green";
+    gaCtx.strokeText("NCC 1", this.pos.x, this.pos.y+25);
+    //gaCtx.stroke();
+    gaCtx.font= "10px";
+    gaCtx.strokeText("Shields: "+100+"/"+100, this.pos.x, this.pos.y+40);
   }
 
   this.drawTootlip= function(){//draws a tooltip just below the vessel indicating its status
@@ -376,3 +384,6 @@ function exercises(){
     console.log(tempWords);
   }
 }
+
+//cd '..\..\School Docs\2015-2016\Advanced Programming\Astrochess'
+//git add -A
