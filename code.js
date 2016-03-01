@@ -80,7 +80,8 @@ function processMouseMove(e){
       var shipLoc= shipList[selShipIndex].pos;
 
       //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
-      if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;//This needs to be prettyfied with the resize function.
+      if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude()
+    || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
 
       drawBoard();
       shipList[selShipIndex].showMouseover();
@@ -163,7 +164,7 @@ function endTurnSequence(){
  //engages ship's thrust orders, and then moves it
  for(i= 0; i< shipList.length; i++){
    shipList[i].thrust();
-   shipList[i].move();
+   if(shipList[i].team== player)shipList[i].move();
    console.log("NCC "+i+" in motion");
  }
 
@@ -187,6 +188,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.moveOrder= null;
   this.wepOrder= null;
   this.isSelected= false;
+  this.hasMoved= false;
   // this.isMouesddOver= false;
 
   this.draw= function(){//draws the vessel at its current location
@@ -241,13 +243,15 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   }
 
   this.changeMove= function(newMove){//this should eventually implement sanity-checking
-    if(newMove instanceof vector){
+    if(newMove instanceof vector && this.hasMoved== false){
       this.momentum.add(newMove);
+      this.hasMoved= true;
     }
   }
 
   this.move= function(){//moves the ship in accordance with its momentum
     this.pos.add(this.momentum);
+    this.hasMoved= false;
   }
 
   this.toggleSelect= function(){//toggles "isSelected"
