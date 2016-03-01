@@ -2,7 +2,7 @@
 /*SETUP CODE*/
 //exercises();
 
-var cycleCode= 0;
+var cycleCode= "NoPlayerControl";
 var gameArea= document.getElementById("gameArea");
 var gaCtx= gameArea.getContext("2d");
 var selShipIndex= -1;
@@ -21,13 +21,14 @@ setupBoard();
 setTimeout(drawBoard, 100);
 testingMethod();
 
-cycleCode= "Unselected";
+var cycleCode= "Unselected";
+console.log("cycleCode: "+cycleCode);
 /*END FIRST-TIME CODE*/
 
 function setupBoard(){
 
-  var v1= new vector(300, 300);
-  shipList.push(new ship(1, v1, new vector(22, 12), 1, 1));
+  shipList.push(new ship(1, new vector(300, 300), new vector(50, 30), 1, 1));
+  shipList.push(new ship(2, new vector(150, 150), new vector(50, 30), 1, 1));
 
 }
 
@@ -105,11 +106,12 @@ function processMouseMove(e){
 function processMouseClick(e){
 
   var m= new vector(e.clientX, e.clientY);
+  // console.log("cycleCode: "+cycleCode);
 
   switch (cycleCode) {
     case "Unselected"://this is the default state
       var tempShip= isNearShip(m);
-      if(tempShip> -1){
+      if(tempShip> -1 && shipList[tempShip].team== player){
         // if(tempShip== selShipIndex){cycleCode= "Unselected";}
         cycleCode= "Selected";
         selShipIndex= tempShip;
@@ -168,6 +170,7 @@ function endTurnSequence(){
  drawBoard();
 
  iteratePlayer();
+ console.log("Now Player "+player+"'s turn.");
  cycleCode= "Unselected"
 
 }
@@ -351,10 +354,7 @@ function iteratePlayer(){
 }
 
 function testingMethod(){
-  var v1= new vector(300, 300);
-  var v2= new vector(100, 75);
-  //v1.add(v2);
-  console.log(addVects(v1, v2));
+
 }
 
 function exercises(){
@@ -387,3 +387,5 @@ function exercises(){
 
 //cd '..\..\School Docs\2015-2016\Advanced Programming\Astrochess'
 //git add -A
+//git commit -m ""
+//git push origin master
