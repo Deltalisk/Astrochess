@@ -27,8 +27,8 @@ console.log("cycleCode: "+cycleCode);
 
 function setupBoard(){
 
-  shipList.push(new ship(1, new vector(300, 300), new vector(50, 30), 1, 1));
-  shipList.push(new ship(2, new vector(150, 150), new vector(50, 30), 1, 1));
+  shipList.push(new ship(1, new vector(250, 300), new vector(50, 30), 1, "Kinetic"));
+  shipList.push(new ship(2, new vector(150, 150), new vector(50, 30), 2, "Dust"));
 
 }
 
@@ -40,7 +40,7 @@ function drawBoard(){
     shipList[i].draw();
     //console.log("current ship:"+i)
   }
-  // testingMethod();
+  munitionList.forEach(selfDraw);
 }
 
 function processUserInput(e){
@@ -56,10 +56,13 @@ function processUserInput(e){
       }
       break;
     case "Selected":
-      if (kcd== 27){
+      if (kcd== 27){//esc
         cycleCode= "Unselected";
         shipList[selShipIndex].toggleSelect();
         selShipIndex= -1;
+      }
+      else if (kcd== 75){//k
+        shipList[selShipIndex].fire();
       }
   }
 
@@ -183,12 +186,14 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.pos= tempPos;
   this.momentum= tempMoment;
   this.hull= tempHull;
-    this.maxThrust= 100-10*this.hull;//eventually this should get a lookup. balance TBD.
+    this.maxThrust= 100-15*this.hull;//eventually this should get a lookup. balance TBD.
+    this.maxHealth= 80+20*this.hull;//more balance TBD.
   this.weapon= tempWep;
   this.moveOrder= null;
   this.wepOrder= null;
   this.isSelected= false;
   this.hasMoved= false;
+  this.health= this.maxHealth;
   // this.isMouesddOver= false;
 
   this.draw= function(){//draws the vessel at its current location
@@ -199,7 +204,9 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     //gaCtx.closePath();
     gaCtx.stroke();
 
-    gaCtx.fillStyle= "white";
+    if(this.team== 1)gaCtx.fillStyle= "blue";
+    else if(this.team== 2)gaCtx.fillStyle= "gray";
+    else gaCtx.fillStyle= "white";
     gaCtx.beginPath();
     gaCtx.arc(this.pos.x, this.pos.y, 10, 0, 2*Math.PI);
     gaCtx.fill();
@@ -221,17 +228,36 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     gaCtx.textAlign= "center";
     gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
     gaCtx.font= "20px green";
-    gaCtx.strokeText("NCC 1", this.pos.x, this.pos.y+25);
+    gaCtx.strokeText("NCC 1", this.pos.x, this.pos.y+25);//this ought to indicate hull size and number
     //gaCtx.stroke();
     gaCtx.font= "10px";
-    gaCtx.strokeText("Shields: "+100+"/"+100, this.pos.x, this.pos.y+40);
+    gaCtx.strokeText("Hull: "+this.health+"/"+this.maxHealth, this.pos.x, this.pos.y+40);
+    gaCtx.strokeText("Wep: "+this.weapon, this.pos.x, this.pos.y+55);
   }
 
-  this.drawTootlip= function(){//draws a tooltip just below the vessel indicating its status
+  // this.drawTootlip= function(){//draws a tooltip just below the vessel indicating its status
+  //
+  // }
 
-  }
+  this.fire= function(target){//implements the ship's firing order, if it exists
+    //if(target instanceof vector)var tgtVect=
 
-  this.fire= function(){//implements the ship's firing order, if it exists
+    switch(this.weapon){//performs weapon actions based upon
+      case "Dust":
+
+      break;
+      case "Kinetic":
+        munitionList.push(new weapon(this.pos, addVects(this.momentum, new vector(100, 100)), this.weapon));
+      break;
+      case "Bomb":
+      break;
+      case "Fighters":
+      case "Bombers":
+      break;
+      case "Lasers":
+      break;
+    }
+
 
   }
 
@@ -261,12 +287,27 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
 }
 
-function weapon(tempPos, tempType){
+function weapon(tempPos, tempMoment, tempType){
+
   this.pos= tempPos;
-  this.type= tempType;
+  this.momentum= tempMoment;
+  this.wepType= tempType;
 
   this.draw= function(){
+    console.log("drawing a "+this.wepType+" device.");
+    gaCtx.beginPath();//draws the movement vector. PLACEHOLDER
+    gaCtx.strokeStyle= "white";
+    gaCtx.moveTo(this.pos.x, this.pos.y);
+    gaCtx.lineTo(this.pos.x+this.momentum.x, this.pos.y+this.momentum.y);
+    //gaCtx.closePath();
+    gaCtx.stroke();
+    gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
+    gaCtx.font= "20px green";
+    switch(this.wepType){
+      case "Kinetic":
+      gaCtx.strokeText("K", this.pos.x, this.pos.y);
 
+    }
   }
 
   this.move= function(){
@@ -355,6 +396,10 @@ function iteratePlayer(){
   else{
     player= 1;
   }
+}
+
+function selfDraw(thing){
+  thing.draw();
 }
 
 function testingMethod(){
