@@ -36,10 +36,11 @@ function setupBoard(){
 function drawBoard(){
   gaCtx.fillStyle= "black";
   gaCtx.fillRect(0, 0, 1200, 800);
-  for(i= 0; i< shipList.length; i++){
-    shipList[i].draw();
-    //console.log("current ship:"+i)
-  }
+  // for(i= 0; i< shipList.length; i++){
+  //   shipList[i].draw();
+  //   //console.log("current ship:"+i)
+  // }
+  shipList.forEach(selfDraw);
   munitionList.forEach(selfDraw);
 }
 
@@ -71,7 +72,7 @@ function processUserInput(e){
 
 function processMouseMove(e){
 
-  var m= new vector(e.clientX, e.clientY);
+  var m= new vector(e.clientX, e.clientY+document.body.scrollTop);
 
   var tempShip= isNearShip(m);
   if(tempShip> -1){
@@ -109,12 +110,13 @@ function processMouseMove(e){
 
 function processMouseClick(e){
 
-  var m= new vector(e.clientX, e.clientY);
-  // console.log("cycleCode: "+cycleCode);
+  var m= new vector(e.clientX, e.clientY+document.body.scrollTop);
+  console.log("cycleCode: "+cycleCode);
 
   switch (cycleCode) {
     case "Unselected"://this is the default state
       var tempShip= isNearShip(m);
+      console.log("mouse at "+m.print());
       if(tempShip> -1 && shipList[tempShip].team== player){
         // if(tempShip== selShipIndex){cycleCode= "Unselected";}
         cycleCode= "Selected";
@@ -159,16 +161,14 @@ function endTurnSequence(){
 
  /*ENGAGE SHIP ORDERS*/
  //engages ship's weapons orders
- for(i= 0; i< shipList.length; i++){
-   shipList[i].fire();
-   console.log("NCC "+i+" firing her main guns!");//THIS IS TRIGGERING EVERY TIME. BUG?
- }
+ // for(i= 0; i< shipList.length; i++){
+ //   shipList[i].fire();
+ //   console.log("NCC "+i+" firing her main guns!");//THIS IS TRIGGERING EVERY TIME. BUG?
+ // }
 
  //engages ship's thrust orders, and then moves it
  for(i= 0; i< shipList.length; i++){
-   shipList[i].thrust();
    if(shipList[i].team== player)shipList[i].move();
-   console.log("NCC "+i+" in motion");
  }
 
  drawBoard();
@@ -189,8 +189,8 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     this.maxThrust= 100-15*this.hull;//eventually this should get a lookup. balance TBD.
     this.maxHealth= 80+20*this.hull;//more balance TBD.
   this.weapon= tempWep;
-  this.moveOrder= null;
-  this.wepOrder= null;
+  // this.moveOrder= null;
+  // this.wepOrder= null;
   this.isSelected= false;
   this.hasMoved= false;
   this.health= this.maxHealth;
@@ -219,7 +219,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     }
 
     gaCtx.stroke();
-
+    console.log("Drawing a ship at ("+this.pos.x+", "+this.pos.y+").");
   }
 
 
@@ -242,12 +242,12 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.fire= function(target){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
 
-    switch(this.weapon){//performs weapon actions based upon
+    switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
       case "Dust":
 
       break;
       case "Kinetic":
-        munitionList.push(new weapon(this.pos, addVects(this.momentum, new vector(100, 100)), this.weapon));
+        munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(100, 100)), this.weapon));
       break;
       case "Bomb":
       break;
@@ -276,6 +276,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   }
 
   this.move= function(){//moves the ship in accordance with its momentum
+    console.log("Ship momentum: "+this.momentum.print());
     this.pos.add(this.momentum);
     this.hasMoved= false;
   }
@@ -292,9 +293,10 @@ function weapon(tempPos, tempMoment, tempType){
   this.pos= tempPos;
   this.momentum= tempMoment;
   this.wepType= tempType;
+  console.log("New weapon");
 
   this.draw= function(){
-    console.log("drawing a "+this.wepType+" device.");
+    console.log("drawing a "+this.wepType+" device at ("+this.pos.x+", "+this.pos.y+").");
     gaCtx.beginPath();//draws the movement vector. PLACEHOLDER
     gaCtx.strokeStyle= "white";
     gaCtx.moveTo(this.pos.x, this.pos.y);
@@ -303,6 +305,7 @@ function weapon(tempPos, tempMoment, tempType){
     gaCtx.stroke();
     gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
     gaCtx.font= "20px green";
+    //gaCtx.beginPath();
     switch(this.wepType){
       case "Kinetic":
       gaCtx.strokeText("K", this.pos.x, this.pos.y);
@@ -311,7 +314,8 @@ function weapon(tempPos, tempMoment, tempType){
   }
 
   this.move= function(){
-
+    console.log("Wep momentum: "+this.momentum.print());
+    this.pos.add(this.momentum);
   }
 }
 
@@ -341,8 +345,13 @@ function order(tempTgt){//these store directions for ships to execute on their t
 }
 
 function vector(tempX, tempY){//This specifies a vector
-  this.x= tempX;
-  this.y= tempY;
+  if(tempX instanceof vector && tempY== null){
+    this.x= tempX.x;
+    this.y= tempX.y;
+  }else{
+    this.x= tempX;
+    this.y= tempY;
+  }
 
   this.add = function(altVect){//Adds the vectors and updates this one with the results
     if(!(altVect instanceof vector))return;
