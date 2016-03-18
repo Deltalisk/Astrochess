@@ -62,8 +62,11 @@ function processUserInput(e){
         shipList[selShipIndex].toggleSelect();
         selShipIndex= -1;
       }
-      else if (kcd== 75){//k
-        shipList[selShipIndex].fire();
+      else if (kcd== 77){//m
+        cycleCode= "Moving";
+      }
+      else if (kcd== 87){//w
+        cycleCode= "Aiming";
       }
   }
 
@@ -81,24 +84,47 @@ function processMouseMove(e){
 
   switch (cycleCode) {
     case "Selected"://runs if a ship is selected
-      var shipLoc= shipList[selShipIndex].pos;
+    //   var shipLoc= shipList[selShipIndex].pos;
+    //
+    //   //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
+    //   if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude()
+    // || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
+    //
+    //   drawBoard();
+    //   shipList[selShipIndex].showMouseover();
+    //   gaCtx.beginPath();
+    //   gaCtx.strokeStyle= "green";
+    //   gaCtx.moveTo(shipLoc.x, shipLoc.y);
+    //   gaCtx.lineTo(m.x, m.y);
+    //   gaCtx.stroke();//draws the new thrust vector
+    //   gaCtx.beginPath();
+    //   gaCtx.strokeStyle= "white";
+    //   gaCtx.moveTo(shipLoc.x, shipLoc.y);
+    //   gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+    //   gaCtx.stroke();//draws the total thrust vector
+      break;
+    case "Moving"://runs if a ship is going to thrust
+    var shipLoc= shipList[selShipIndex].pos;
 
-      //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
-      if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude()
-    || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
+    //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
+    if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude()
+  || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
 
-      drawBoard();
-      shipList[selShipIndex].showMouseover();
-      gaCtx.beginPath();
-      gaCtx.strokeStyle= "green";
-      gaCtx.moveTo(shipLoc.x, shipLoc.y);
-      gaCtx.lineTo(m.x, m.y);
-      gaCtx.stroke();//draws the new thrust vector
-      gaCtx.beginPath();
-      gaCtx.strokeStyle= "white";
-      gaCtx.moveTo(shipLoc.x, shipLoc.y);
-      gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
-      gaCtx.stroke();//draws the total thrust vector
+    drawBoard();
+    shipList[selShipIndex].showMouseover();
+    gaCtx.beginPath();
+    gaCtx.strokeStyle= "green";
+    gaCtx.moveTo(shipLoc.x, shipLoc.y);
+    gaCtx.lineTo(m.x, m.y);
+    gaCtx.stroke();//draws the new thrust vector
+    gaCtx.beginPath();
+    gaCtx.strokeStyle= "white";
+    gaCtx.moveTo(shipLoc.x, shipLoc.y);
+    gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+    gaCtx.stroke();//draws the total thrust vector
+      break;
+    case "Aiming"://runs if have selected ship and trying to shoot a thing
+
       break;
     case "Unselected":
 
@@ -127,6 +153,13 @@ function processMouseClick(e){
       break;
     case "WepSelected"://this happens when a ship has been chosen to fire its weapons
 
+      break;
+    case "Moving":
+      if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;
+      shipList[selShipIndex].changeMove(subVects(m, shipList[selShipIndex].pos));
+      cycleCode= "Unselected";
+      shipList[selShipIndex].toggleSelect();
+      selShipIndex= -1;
       break;
     case "Selected"://this happens when a ship has been selected, but nothing else
       var tempShip= isNearShip(m);
@@ -224,7 +257,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
 
   this.showMouseover= function(){
-    console.log("I should draw my mouseover!");
+    console.log("cycleCode: "+cycleCode);
     gaCtx.textAlign= "center";
     gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
     gaCtx.font= "20px green";
@@ -244,7 +277,9 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
     switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
       case "Dust":
-
+        for(var i= 0; i<10; i++){
+          munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(100+Math.random()*30, 100+Math.random()*30))));
+        }
       break;
       case "Kinetic":
         munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(100, 100)), this.weapon));
