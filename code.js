@@ -50,6 +50,12 @@ function processUserInput(e){
 
   console.log("keyup logged: "+kcd);
 
+  if (kcd== 27){//esc
+    cycleCode= "Unselected";
+    shipList[selShipIndex].toggleSelect();
+    selShipIndex= -1;
+  }
+
   switch(cycleCode){
     case "Unselected":
       if (kcd== 13){
@@ -57,12 +63,7 @@ function processUserInput(e){
       }
       break;
     case "Selected":
-      if (kcd== 27){//esc
-        cycleCode= "Unselected";
-        shipList[selShipIndex].toggleSelect();
-        selShipIndex= -1;
-      }
-      else if (kcd== 77){//m
+      if (kcd== 77){//m
         cycleCode= "Moving";
       }
       else if (kcd== 87){//w
@@ -108,23 +109,40 @@ function processMouseMove(e){
 
     //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
     if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude()
-  || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
+      || shipList[selShipIndex].hasMoved)break;//This needs to be prettyfied with the resize function.
 
-    drawBoard();
-    shipList[selShipIndex].showMouseover();
-    gaCtx.beginPath();
-    gaCtx.strokeStyle= "green";
-    gaCtx.moveTo(shipLoc.x, shipLoc.y);
-    gaCtx.lineTo(m.x, m.y);
-    gaCtx.stroke();//draws the new thrust vector
-    gaCtx.beginPath();
-    gaCtx.strokeStyle= "white";
-    gaCtx.moveTo(shipLoc.x, shipLoc.y);
-    gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
-    gaCtx.stroke();//draws the total thrust vector
+      drawBoard();
+      shipList[selShipIndex].showMouseover();
+      gaCtx.beginPath();
+      gaCtx.strokeStyle= "green";
+      gaCtx.moveTo(shipLoc.x, shipLoc.y);
+      gaCtx.lineTo(m.x, m.y);
+      gaCtx.stroke();//draws the new thrust vector
+      gaCtx.beginPath();
+      gaCtx.strokeStyle= "white";
+      gaCtx.moveTo(shipLoc.x, shipLoc.y);
+      gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+      gaCtx.stroke();//draws the total thrust vector
       break;
     case "Aiming"://runs if have selected ship and trying to shoot a thing
+      var shipLoc= shipList[selShipIndex].pos;
 
+    //console.log(shipList[selShipIndex].maxThrust+", "+subVects(m, shipList[selShipIndex].pos).magnitude())
+    if(shipList[selShipIndex].maxFireDist<subVects(m, shipList[selShipIndex].pos).magnitude()
+      || shipList[selShipIndex].hasFired)break;//This needs to be prettyfied with the resize function.
+
+      drawBoard();
+      shipList[selShipIndex].showMouseover();
+      gaCtx.beginPath();
+      gaCtx.strokeStyle= "green";
+      gaCtx.moveTo(shipLoc.x, shipLoc.y);
+      gaCtx.lineTo(m.x, m.y);
+      gaCtx.stroke();//draws the new thrust vector
+      gaCtx.beginPath();
+      gaCtx.strokeStyle= "white";
+      gaCtx.moveTo(shipLoc.x, shipLoc.y);
+      gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+      gaCtx.stroke();//draws the total thrust vector
       break;
     case "Unselected":
 
@@ -151,8 +169,12 @@ function processMouseClick(e){
         //ABOVE FUNCTION WILL NEED TO ITERATE OVER PROGRESSIVELY SMALLER PARTS OF THE shipList
       }
       break;
-    case "WepSelected"://this happens when a ship has been chosen to fire its weapons
-
+    case "Aiming"://this happens when a ship has been chosen to fire its weapons
+      if(shipList[selShipIndex].maxFireDist<subVects(m, shipList[selShipIndex].pos).magnitude())break;
+      shipList[selShipIndex].fire(subVects(m, shipList[selShipIndex].pos));
+      cycleCode= "Unselected";
+      shipList[selShipIndex].toggleSelect();
+      selShipIndex= -1;
       break;
     case "Moving":
       if(shipList[selShipIndex].maxThrust<subVects(m, shipList[selShipIndex].pos).magnitude())break;
@@ -222,10 +244,12 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     this.maxThrust= 100-15*this.hull;//eventually this should get a lookup. balance TBD.
     this.maxHealth= 80+20*this.hull;//more balance TBD.
   this.weapon= tempWep;
+    this.maxFireDist= 200;//eventually gets a lookup. balance TBD
   // this.moveOrder= null;
   // this.wepOrder= null;
   this.isSelected= false;
   this.hasMoved= false;
+  this.hasFired= false;
   this.health= this.maxHealth;
   // this.isMouesddOver= false;
 
@@ -274,24 +298,26 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
   this.fire= function(target){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
-
-    switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
-      case "Dust":
-        for(var i= 0; i<10; i++){
-          munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(100+Math.random()*30, 100+Math.random()*30))));
-        }
-      break;
-      case "Kinetic":
-        munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(100, 100)), this.weapon));
-      break;
-      case "Bomb":
-      break;
-      case "Fighters":
-      case "Bombers":
-      break;
-      case "Lasers":
-      break;
-    }
+    console.log("Attempting to fire");
+    if(!this.hasFired){
+      switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
+        case "Dust":
+          for(var i= 0; i<10; i++){
+            munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(target.x-15+Math.random()*30, target.y-15+Math.random()*30))));
+          }
+        break;
+        case "Kinetic":
+          munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
+        break;
+        case "Bomb":
+        break;
+        case "Fighters":
+        case "Bombers":
+        break;
+        case "Lasers":
+        break;
+      }
+  }
 
 
   }
