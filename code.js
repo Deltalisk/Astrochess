@@ -161,7 +161,7 @@ function processMouseClick(e){
     case "Unselected"://this is the default state
       var tempShip= isNearShip(m);
       console.log("mouse at "+m.print());
-      if(tempShip> -1 && shipList[tempShip].team== player){
+      if(tempShip> -1 && shipList[tempShip].team== player){//verifies that the ship is real and on the player's team
         // if(tempShip== selShipIndex){cycleCode= "Unselected";}
         cycleCode= "Selected";
         selShipIndex= tempShip;
@@ -239,8 +239,11 @@ function endTurnSequence(){
    if(shipList[i].team== player)shipList[i].move();
  }
 
- //Checks for ships and weapons that have le5ft the battlespace and won't return
+ //Checks for ships and weapons that have left the battlespace and won't return
  cleanBoard();
+ for(i= 0; i<shipList.length; i++){//allows ships to shoot again. This should be used for other similar resets
+   shipList[i].hasFired= false;
+ }
 
  drawBoard();
 
@@ -277,6 +280,12 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     //gaCtx.closePath();
     gaCtx.stroke();
 
+    var healthBar= "";
+    for(var i= 0; i<1+this.health/10; i++){healthBar+="x";}
+    gaCtx.textAlign= "center";
+    gaCtx.font= "10px green";
+    gaCtx.strokeText(healthBar, this.pos.x, this.pos.y-15);
+
     if(this.team== 1)gaCtx.fillStyle= "blue";
     else if(this.team== 2)gaCtx.fillStyle= "gray";
     else gaCtx.fillStyle= "white";
@@ -308,7 +317,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
         break;
     }
 
-    if(this.health<=0)gaCtx.strokeText("CONNECTION LOST", this.pos.x, this.pos.y);
+    if(this.health<=0)gaCtx.strokeText("CONNECTION LOST", this.pos.x, this.pos.y+15);
     gaCtx.stroke();
     console.log("Health: "+this.health+"/"+this.maxHealth);
   }
@@ -342,19 +351,23 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
             munitionList.push(new weapon(new vector(this.pos),
             addVects(this.momentum, new vector(target.x-15+Math.random()*30, target.y-15+Math.random()*30), this.weapon)));
           }
+          this.hasFired= true;
         break;
         case "Kinetic":
           // munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
         case "Bomb":
           munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
+          this.hasFired= true;
         break;
         case "Fighters":
         case "Bombers":
         break;
         case "Lasers":
-          if(target instanceof ship){
-            target.health-= this.baseDamage;
+          var tempShip= isNearShip(m);
+          if(tempShip> -1){
+            shipList[tempShip].health-= this.baseDamage;
           }
+          this.hasFired= true;
         break;
       }
   }
