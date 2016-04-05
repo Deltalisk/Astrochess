@@ -214,6 +214,19 @@ function endTurnSequence(){
    munitionList[i].move();
  }
 
+ /*CHECKS FOR WEAPON IMPACTS*/
+ for(i= 0; i<munitionList.length; i++){
+   for(j= 0; j<shipList.length; j++){
+    //  console.log("Checking for impact events on NCC "+j);
+    //  console.log("weapon "+i+" relative to NCC "+j+": "+subVects(shipList[j].pos, munitionList[i].pos).magnitude());
+     if(subVects(shipList[j].pos, munitionList[i].pos).magnitude()<10){
+       shipList[j].health-= munitionList[i].baseDamage;//this will also take into account velocity eventually
+       //munitionList[i].momentum.add()//this should alter the weapon's momentum based on the ship's
+      //  console.log("Registering an impact event on NCC "+j);
+     }
+   }
+ }
+
  /*ENGAGE SHIP ORDERS*/
  //engages ship's weapons orders
  // for(i= 0; i< shipList.length; i++){
@@ -225,6 +238,9 @@ function endTurnSequence(){
  for(i= 0; i< shipList.length; i++){
    if(shipList[i].team== player)shipList[i].move();
  }
+
+ //Checks for ships and weapons that have le5ft the battlespace and won't return
+ cleanBoard();
 
  drawBoard();
 
@@ -270,26 +286,46 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
     if(this.isSelected){//creates a box to indicate selection
       gaCtx.strokeStyle= "green";
+      // gaCtx.strokeStyle= "3px";
       gaCtx.beginPath();
       gaCtx.arc(this.pos.x, this.pos.y, 10, 0, 2*Math.PI);
       gaCtx.stroke();
     }
 
+    gaCtx.beginPath();
+    switch(cycleCode){
+      case("Moving"):
+        gaCtx.strokeStyle= "green";
+        //gaCtx.fillStyle= ???
+        gaCtx.arc(this.pos.x, this.pos.y, this.maxThrust, 0, 2*Math.PI);
+        gaCtx.stroke();
+        break;
+      case("Aiming"):
+        gaCtx.strokeStyle= "green";
+        //gaCtx.fillStyle= ???
+        gaCtx.arc(this.pos.x, this.pos.y, this.maxFireDist, 0, 2*Math.PI);
+        gaCtx.stroke();
+        break;
+    }
+
+    if(this.health<=0)gaCtx.strokeText("CONNECTION LOST", this.pos.x, this.pos.y);
     gaCtx.stroke();
-    console.log("Drawing a ship at ("+this.pos.x+", "+this.pos.y+").");
+    console.log("Health: "+this.health+"/"+this.maxHealth);
   }
 
 
   this.showMouseover= function(){
-    console.log("cycleCode: "+cycleCode);
-    gaCtx.textAlign= "center";
-    gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
-    gaCtx.font= "20px green";
-    gaCtx.strokeText("NCC 1", this.pos.x, this.pos.y+25);//this ought to indicate hull size and number
-    //gaCtx.stroke();
-    gaCtx.font= "10px";
-    gaCtx.strokeText("Hull: "+this.health+"/"+this.maxHealth, this.pos.x, this.pos.y+40);
-    gaCtx.strokeText("Wep: "+this.weapon, this.pos.x, this.pos.y+55);
+    //console.log("cycleCode: "+cycleCode);
+    if(this.health>0){
+      gaCtx.textAlign= "center";
+      gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
+      gaCtx.font= "20px green";
+      gaCtx.strokeText("NCC 1", this.pos.x, this.pos.y+25);//this ought to indicate hull size and number
+      //gaCtx.stroke();
+      gaCtx.font= "10px";
+      gaCtx.strokeText("Hull: "+this.health+"/"+this.maxHealth, this.pos.x, this.pos.y+40);
+      gaCtx.strokeText("Wep: "+this.weapon, this.pos.x, this.pos.y+55);
+    }
   }
 
   // this.drawTootlip= function(){//draws a tooltip just below the vessel indicating its status
@@ -299,22 +335,26 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.fire= function(target){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
     console.log("Attempting to fire");
-    if(!this.hasFired){
+    if(!this.hasFired && this.health>0){
       switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
         case "Dust":
           for(var i= 0; i<10; i++){
-            munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, new vector(target.x-15+Math.random()*30, target.y-15+Math.random()*30))));
+            munitionList.push(new weapon(new vector(this.pos),
+            addVects(this.momentum, new vector(target.x-15+Math.random()*30, target.y-15+Math.random()*30), this.weapon)));
           }
         break;
         case "Kinetic":
-          munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
-        break;
+          // munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
         case "Bomb":
+          munitionList.push(new weapon(new vector(this.pos), addVects(this.momentum, target), this.weapon));
         break;
         case "Fighters":
         case "Bombers":
         break;
         case "Lasers":
+          if(target instanceof ship){
+            target.health-= this.baseDamage;
+          }
         break;
       }
   }
@@ -330,7 +370,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   }
 
   this.changeMove= function(newMove){//this should eventually implement sanity-checking
-    if(newMove instanceof vector && this.hasMoved== false){
+    if(newMove instanceof vector && this.hasMoved== false && this.health> 0){
       this.momentum.add(newMove);
       this.hasMoved= true;
     }
@@ -354,28 +394,44 @@ function weapon(tempPos, tempMoment, tempType){
   this.pos= tempPos;
   this.momentum= tempMoment;
   this.wepType= tempType;
-  console.log("New weapon");
+  var tmpDmg= 10;//WepType Damage Lookup
+  if(this.wepType== "Kinetic")tmpDmg= 45;
+  else if (this.wepType== "Dust")tmpDmg= 5;
+  // else if (this.wepType== "Bomb")tmpDmg//This should be a function damaging all nearby ships
+  else tmpDmg= 10;
+  this.baseDamage= tmpDmg;//this should get a lookup from wepType eventually
+  // console.log("New weapon");
 
   this.draw= function(){
-    console.log("drawing a "+this.wepType+" device at ("+this.pos.x+", "+this.pos.y+").");
+    //console.log("drawing a "+this.wepType+" device at ("+this.pos.x+", "+this.pos.y+").");
     gaCtx.beginPath();//draws the movement vector. PLACEHOLDER
     gaCtx.strokeStyle= "white";
     gaCtx.moveTo(this.pos.x, this.pos.y);
     gaCtx.lineTo(this.pos.x+this.momentum.x, this.pos.y+this.momentum.y);
     //gaCtx.closePath();
     gaCtx.stroke();
+    gaCtx.beginPath();
+    //gaCtx.moveTo(this.pos.x, this.pos.y);
+    gaCtx.arc(this.pos.x+this.momentum.x, this.pos.y+this.momentum.y, 10, 0, 2*Math.PI);
+    gaCtx.stroke();
     gaCtx.font= "Courier New, Courier, monospace";//ought to get the right font and color to apply.
     gaCtx.font= "20px green";
     //gaCtx.beginPath();
     switch(this.wepType){
       case "Kinetic":
-      gaCtx.strokeText("K", this.pos.x, this.pos.y);
-
+        gaCtx.strokeText("K", this.pos.x, this.pos.y);
+        break;
+      case "Dust":
+        gaCtx.strokeText("d", this.pos.x, this.pos.y);
+        break;
+      case "Bomb":
+        gaCtx.strokeText("B", this.pos.x, this.pos.y);
+        break;
     }
   }
 
   this.move= function(){
-    console.log("Wep momentum: "+this.momentum.print());
+    // console.log("Wep momentum: "+this.momentum.print());
     this.pos.add(this.momentum);
   }
 }
@@ -466,6 +522,10 @@ function iteratePlayer(){
   else{
     player= 1;
   }
+}
+
+function cleanBoard(){//stub
+
 }
 
 function selfDraw(thing){
