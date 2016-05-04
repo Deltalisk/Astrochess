@@ -171,8 +171,9 @@ function processMouseClick(e){
       }
       break;
     case "Aiming"://this happens when a ship has been chosen to fire its weapons
-      if(shipList[selShipIndex].maxFireDist<subVects(m, shipList[selShipIndex].pos).magnitude())break;
-      shipList[selShipIndex].fire(subVects(m, shipList[selShipIndex].pos));
+      if(!shipList[selShipIndex].canFireOn(m))break;
+      // shipList[selShipIndex].fire(subVects(m, shipList[selShipIndex].pos));
+      shipList[selShipIndex].fire(m);
       cycleCode= "Unselected";
       shipList[selShipIndex].toggleSelect();
       selShipIndex= -1;
@@ -347,9 +348,10 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   //
   // }
 
-  this.fire= function(target){//implements the ship's firing order, if it exists
+  this.fire= function(mousePos){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
     // console.log("Attempting to fire");
+    this.target= subVects(mousePos, this.pos);
     if(!this.hasFired && this.health>0){
       switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
         case "Dust":
@@ -369,17 +371,21 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
         case "Bombers":
         break;
         case "Lasers":
-          var tempShip= isNearShip(target);
+          var tempShip= isNearShip(mousePos);
           console.log("Found "+tempShip);
           if(tempShip> -1){
-            shipList[tempShip].health-= this.baseDamage;
+            shipList[tempShip].health-= 5;
           }
           this.hasFired= true;
         break;
       }
+    }
   }
 
-
+  this.canFireOn= function(mousePos){
+    if(this.weapon== "Lasers")return true;
+    if(subVects(mousePos, this.pos)<this.maxFireDist)return true;
+    return false;
   }
 
   this.thrust= function(){//implements the ship's thrust order
