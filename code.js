@@ -22,13 +22,13 @@ setTimeout(drawBoard, 100);
 testingMethod();
 
 var cycleCode= "Unselected";
-console.log("cycleCode: "+cycleCode);
+// console.log("cycleCode: "+cycleCode);
 /*END FIRST-TIME CODE*/
 
 function setupBoard(){
 
-  shipList.push(new ship(1, new vector(250, 300), new vector(50, 30), 1, "Kinetic"));
-  shipList.push(new ship(2, new vector(150, 150), new vector(50, 30), 2, "Dust"));
+  shipList.push(new ship(1, new vector(80, 100), new vector(50, 30), 1, "Lasers"));
+  shipList.push(new ship(2, new vector(75, 50), new vector(50, 30), 2, "Bomb"));
 
 }
 
@@ -48,7 +48,7 @@ function processUserInput(e){
 
   var kcd= e.keyCode;
 
-  console.log("keyup logged: "+kcd);
+  // console.log("keyup logged: "+kcd);
 
   if (kcd== 27){//esc
     cycleCode= "Unselected";
@@ -77,6 +77,7 @@ function processUserInput(e){
 function processMouseMove(e){
 
   var m= new vector(e.clientX, e.clientY+document.body.scrollTop);
+  console.log("Mouse: "+m.print());
 
   var tempShip= isNearShip(m);
   if(tempShip> -1){
@@ -155,12 +156,12 @@ function processMouseMove(e){
 function processMouseClick(e){
 
   var m= new vector(e.clientX, e.clientY+document.body.scrollTop);
-  console.log("cycleCode: "+cycleCode);
+  // console.log("cycleCode: "+cycleCode);
 
   switch (cycleCode) {
     case "Unselected"://this is the default state
       var tempShip= isNearShip(m);
-      console.log("mouse at "+m.print());
+      // console.log("mouse at "+m.print());
       if(tempShip> -1 && shipList[tempShip].team== player){//verifies that the ship is real and on the player's team
         // if(tempShip== selShipIndex){cycleCode= "Unselected";}
         cycleCode= "Selected";
@@ -248,7 +249,7 @@ function endTurnSequence(){
  drawBoard();
 
  iteratePlayer();
- console.log("Now Player "+player+"'s turn.");
+ // console.log("Now Player "+player+"'s turn.");
  cycleCode= "Unselected"
 
 }
@@ -277,8 +278,13 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
     gaCtx.strokeStyle= "white";
     gaCtx.moveTo(this.pos.x, this.pos.y);
     gaCtx.lineTo(this.pos.x+this.momentum.x, this.pos.y+this.momentum.y);
+    // gaCtx.strokeStyle= "red";
+    // gaCtx.moveTo(this.pos.x, this.pos.y);//used to verify ship.pos...
+    // gaCtx.lineTo(this.pos.x, this.pos.y+50);//...is actually the center
     //gaCtx.closePath();
     gaCtx.stroke();
+    gaCtx.strokeStyle= "white";
+
 
     var healthBar= "";
     for(var i= 0; i<1+this.health/10; i++){healthBar+="x";}
@@ -343,7 +349,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
   this.fire= function(target){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
-    console.log("Attempting to fire");
+    // console.log("Attempting to fire");
     if(!this.hasFired && this.health>0){
       switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
         case "Dust":
@@ -363,7 +369,8 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
         case "Bombers":
         break;
         case "Lasers":
-          var tempShip= isNearShip(m);
+          var tempShip= isNearShip(target);
+          console.log("Found "+tempShip);
           if(tempShip> -1){
             shipList[tempShip].health-= this.baseDamage;
           }
@@ -390,7 +397,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   }
 
   this.move= function(){//moves the ship in accordance with its momentum
-    console.log("Ship momentum: "+this.momentum.print());
+    // console.log("Ship momentum: "+this.momentum.print());
     this.pos.add(this.momentum);
     this.hasMoved= false;
   }
@@ -453,15 +460,20 @@ function isNearShip(loc, distance, shipIndex){//This still needs to be able to f
   if(!(loc instanceof vector)) return;
 
   var d;
-  if(distance== null || isNaN(distance))d= 10;
+  if(distance== null || isNaN(distance)){
+    d= 10;
+    console.log("Using default distance");
+  }
   else d= distance;
 
   if(shipIndex != null){
+    console.log("Attempting to find NCC "+shipIndex);
     //UNFINISHED: should check proximity of a particular vessel
   }else{//UNFINISHED: this should check for the nearest vessel within d
     for(var i= 0; i<shipList.length; i++){
-      var distVect= subVects(shipList[i].pos, loc);
-      if(distVect.magnitude()<d || -distVect.magnitude()>d){//there's a bug here in the selection system. I need to fix it.
+      var distVect= subVects(loc, shipList[i].pos);//for some reason this is searching from the top left corner of the ship instead of center.
+      console.log("DistVect: "+distVect.magnitude());//maybe it's something to do with the edges of the canvas offset!
+      if(distVect.magnitude()<=d){
         return i;
       }
     }
@@ -469,7 +481,7 @@ function isNearShip(loc, distance, shipIndex){//This still needs to be able to f
   return -1;
 }
 
-function order(tempTgt){//these store directions for ships to execute on their turn
+function order(tempTgt){//these store directions for ships to execute on their turn. Deprecated
   this.target= tempTgt;//may be a vector (for kinetic weps) or a vessel (for lasers)
   //INCOMPLETE
 }
