@@ -28,7 +28,7 @@ var cycleCode= "Unselected";
 function setupBoard(){
 
   shipList.push(new ship(1, new vector(80, 100), new vector(50, 30), 1, "Lasers"));
-  shipList.push(new ship(2, new vector(75, 50), new vector(50, 30), 2, "Bomb"));
+  shipList.push(new ship(2, new vector(75, 50), new vector(50, 30), 2, "Kinetic"));
 
 }
 
@@ -139,11 +139,14 @@ function processMouseMove(e){
       gaCtx.moveTo(shipLoc.x, shipLoc.y);
       gaCtx.lineTo(m.x, m.y);
       gaCtx.stroke();//draws the new thrust vector
-      gaCtx.beginPath();
-      gaCtx.strokeStyle= "white";
-      gaCtx.moveTo(shipLoc.x, shipLoc.y);
-      gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
-      gaCtx.stroke();//draws the total thrust vector
+      // if(!shipList[selShipIndex].weapon== "Lasers"){
+        gaCtx.beginPath();
+        gaCtx.strokeStyle= "white";
+        gaCtx.moveTo(shipLoc.x, shipLoc.y);
+        gaCtx.lineTo(m.x+shipList[selShipIndex].momentum.x, m.y+shipList[selShipIndex].momentum.y);
+        gaCtx.stroke();//draws the total thrust vector
+        // console.log("Firin ma lazer?");
+      // }
       break;
     case "Unselected":
 
@@ -251,7 +254,7 @@ function endTurnSequence(){
 
  iteratePlayer();
  // console.log("Now Player "+player+"'s turn.");
- cycleCode= "Unselected"
+ cycleCode= "Unselected";
 
 }
 
@@ -351,7 +354,7 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
   this.fire= function(mousePos){//implements the ship's firing order, if it exists
     //if(target instanceof vector)var tgtVect=
     // console.log("Attempting to fire");
-    this.target= subVects(mousePos, this.pos);
+    var target= subVects(mousePos, this.pos);
     if(!this.hasFired && this.health>0){
       switch(this.weapon){//performs weapon actions based upon, well obviously, the weapon
         case "Dust":
@@ -384,7 +387,11 @@ function ship(tempTeam, tempPos, tempMoment, tempHull, tempWep){//this is the me
 
   this.canFireOn= function(mousePos){
     if(this.weapon== "Lasers")return true;
-    if(subVects(mousePos, this.pos)<this.maxFireDist)return true;
+    if(subVects(mousePos, this.pos).magnitude()<this.maxFireDist){
+      console.log("we're good to shoot");
+      return true;
+    }
+    console.log("unable to fire");
     return false;
   }
 
